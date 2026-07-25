@@ -16,6 +16,7 @@ import { initPushOnBoot, PushPrompts } from '@/push'
 import { RambleReview } from '@/ramble/RambleReview'
 import { useSelectionStore } from '@/stores/selection'
 import { useUiStore } from '@/stores/ui'
+import { DemoBanner } from './demo-banner'
 import { Sidebar } from './sidebar'
 
 /**
@@ -84,6 +85,10 @@ export function AppLayout() {
             data-tauri-drag-region
             className="absolute inset-x-0 top-0 z-10 h-[var(--ot-desktop-drag)]"
           />
+          {/* Demo-instance notice. Lives inside the content column (not above the grid) so it
+              never interacts with the desktop shell's traffic-light drag band, and renders as
+              null on every normal instance. */}
+          <DemoBanner />
           <main
             id="main"
             tabIndex={-1}

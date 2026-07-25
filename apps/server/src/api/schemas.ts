@@ -186,4 +186,15 @@ export const InfoDtoSchema = z.object({
   update: z
     .object({ available: z.boolean(), latestVersion: z.string(), url: z.string() })
     .nullable(),
+  /** Public-sandbox facts; null on every normal instance. Credentials are published on
+   *  purpose so the login page can prefill them — see demo.ts. */
+  demo_mode: z
+    .object({
+      enabled: z.literal(true),
+      resets_at: z.string(),
+      reset_seconds: z.number(),
+      email: z.string(),
+      password: z.string(),
+    })
+    .nullable(),
 })

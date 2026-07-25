@@ -34,14 +34,18 @@ export function startJobs(deps: JobDeps): { stop: () => void } {
     }
   }
 
-  // backup.nightly — cron from OPENTASK_BACKUP_CRON (default '0 3 * * *').
-  crons.push(
-    new Cron(
-      config.backupCron,
-      { protect: true },
-      guarded('backup.nightly', () => runNightlyBackup(deps)),
-    ),
-  )
+  // backup.nightly — cron from OPENTASK_BACKUP_CRON (default '0 3 * * *'). Never registered
+  // in demo mode: the instance wipes itself on a timer, so a nightly VACUUM INTO would only
+  // churn the disk snapshotting throwaway data (and the restore route is guarded anyway).
+  if (!config.demoMode) {
+    crons.push(
+      new Cron(
+        config.backupCron,
+        { protect: true },
+        guarded('backup.nightly', () => runNightlyBackup(deps)),
+      ),
+    )
+  }
 
   // productivity.reconcile — nightly day_stats/karma repair, per user (single-user: one iteration).
   crons.push(

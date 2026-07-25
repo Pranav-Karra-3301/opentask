@@ -50,6 +50,7 @@ import {
   tasks,
   userSettings,
 } from './db/schema'
+import { DEMO_EMAIL, DEMO_NAME, DEMO_PASSWORD } from './demo'
 import { logActivity } from './lib/activity'
 import { newId, nowIso } from './lib/ids'
 import { parseContextFor } from './lib/parse-context'
@@ -59,9 +60,7 @@ import { ensureDataDirAndSecrets } from './secrets'
 import { resolveProject, resolveSection } from './services/quick-resolve'
 import { type CreateTaskInput, createTask, getSettings } from './services/task-write'
 
-const DEMO_EMAIL = 'demo@opentask.local'
-const DEMO_PASSWORD = 'opentask-demo'
-const DEMO_NAME = 'Demo'
+/* Credentials live in ./demo so `/api/v1/info` publishes exactly what this file creates. */
 /** Frozen dataset timezone — all relative dues resolve here so screenshots stay "today"-correct. */
 const TZ = 'America/New_York'
 

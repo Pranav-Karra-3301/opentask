@@ -9,11 +9,18 @@
 <p align="center"><sub>Formerly <strong>OpenDoist</strong> — renamed in v0.4.0; every legacy surface (env vars, tokens, backups, data files) keeps working. See <a href="#migrating-from-opendoist">Migrating from OpenDoist</a>.</sub></p>
 
 <p align="center">
-  <a href="https://github.com/pranav-karra-3301/opentask/actions/workflows/ci.yml"><img src="https://github.com/pranav-karra-3301/opentask/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/pranav-karra-3301/opentask/releases"><img src="https://img.shields.io/github/v/release/pranav-karra-3301/opentask?color=4c7a45&label=release" alt="Latest release"></a>
-  <a href="https://github.com/pranav-karra-3301/opentask/pkgs/container/opentask"><img src="https://img.shields.io/badge/ghcr.io-opentask-1f60c2" alt="GHCR image"></a>
+  <a href="https://github.com/junkdrawerlab/opentask/actions/workflows/ci.yml"><img src="https://github.com/junkdrawerlab/opentask/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/junkdrawerlab/opentask/releases"><img src="https://img.shields.io/github/v/release/junkdrawerlab/opentask?color=4c7a45&label=release" alt="Latest release"></a>
+  <a href="https://github.com/users/Pranav-Karra-3301/packages/container/package/opentask"><img src="https://img.shields.io/badge/ghcr.io-opentask-1f60c2" alt="GHCR image"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-4c7a45" alt="License: AGPL-3.0"></a>
   <img src="https://img.shields.io/badge/node-%E2%89%A5%2022-4c7a45" alt="Node >= 22">
+</p>
+
+<p align="center">
+  <a href="https://opentask.pranavkarra.me"><strong>Website</strong></a> ·
+  <a href="https://tryopentask.pranavkarra.me"><strong>Live demo</strong></a> ·
+  <a href="https://opentask.pranavkarra.me/docs"><strong>Docs</strong></a> ·
+  <a href="https://opentask.pranavkarra.me/changelog"><strong>Changelog</strong></a>
 </p>
 
 <p align="center">
@@ -170,7 +177,7 @@ Full docs live in [`docs/`](docs/):
 Requires Node ≥ 22 and pnpm 10.
 
 ```sh
-git clone https://github.com/pranav-karra-3301/opentask.git
+git clone https://github.com/junkdrawerlab/opentask.git
 cd opentask
 pnpm install
 pnpm verify   # lint + typecheck + test + build, everything CI runs

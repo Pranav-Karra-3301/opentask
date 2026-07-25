@@ -132,6 +132,49 @@ Available image tags on `ghcr.io/pranav-karra-3301/opentask`:
 | `X.Y` | The latest patch of a minor line, e.g. `0.1`. |
 | `nightly` | The latest build from `main`. Unstable; for testing only. |
 
+## Run a disposable demo
+
+A **public sandbox**: an instance pre-loaded with sample data that wipes and re-seeds itself on a
+timer, with every abusable surface refused by the server. This is exactly how
+[tryopentask.pranavkarra.me](https://tryopentask.pranavkarra.me) runs.
+
+```sh
+docker compose -f deploy/demo/docker-compose.yml up -d
+```
+
+Or directly, mounting the supervisor script into the released image (no custom build):
+
+```sh
+docker run -d --name opentask-demo -p 7969:7969 \
+  --memory=280m --cpus=0.5 \
+  --tmpfs /data:uid=1000,gid=1000,mode=0700,size=256m \
+  -v "$PWD/deploy/demo/entrypoint.sh:/demo-entrypoint.sh:ro" \
+  -e OPENTASK_PORT=7969 \
+  -e OPENTASK_DEMO_MODE=true \
+  -e OPENTASK_DEMO_RESET_SECONDS=1800 \
+  -e OPENTASK_PUBLIC_URL=https://demo.example.com \
+  --entrypoint /bin/sh ghcr.io/pranav-karra-3301/opentask /demo-entrypoint.sh
+```
+
+Log in with **`demo@opentask.local` / `opentask-demo`** — the sign-in page offers a one-click
+button, because demo mode publishes those credentials on `/api/v1/info` on purpose.
+
+How it works ([`deploy/demo/entrypoint.sh`](../deploy/demo/entrypoint.sh)): each cycle wipes
+`/data`, runs the seeder with the server **down** (so nothing else holds the SQLite WAL), then
+serves under `timeout` until the interval elapses. It re-seeds rather than restoring a snapshot
+because the sample dataset resolves *relative* dates at seed time — a golden copy would show
+yesterday's "today". Expect ~10 seconds of downtime per cycle; the in-app banner counts down to
+it, and `resets_at` on `/api/v1/info` is the same clock.
+
+Notes:
+
+- `/data` is a **tmpfs** on purpose. The demo has nothing worth persisting, and a restart should
+  always come up clean. The `uid=1000` option matters: the image runs as `node`, which has to be
+  able to delete `/data/*` every cycle.
+- The memory cap is not decoration. It guarantees a hammered demo is OOM-killed and restarted —
+  which, for a demo, is just an early reset — instead of starving whatever else shares the host.
+- See [Configuration → Demo mode](configuration.md#demo-mode) for exactly what gets refused.
+
 ## Off-host replication
 
 For continuous off-host copies of the database (in addition to the nightly
@@ -144,7 +187,7 @@ to S3-compatible storage. The full recipe lives in the backups guide:
 You need Node ≥ 22 and pnpm.
 
 ```sh
-git clone https://github.com/pranav-karra-3301/opentask.git
+git clone https://github.com/junkdrawerlab/opentask.git
 cd opentask
 pnpm install
 pnpm build   # builds @opentask/core and the web SPA (the server runs via tsx)

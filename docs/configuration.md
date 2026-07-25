@@ -32,6 +32,27 @@ generates `/data/secrets.json` (see [Secrets](#secrets)).
 | `OPENTASK_TRUST_PROXY` | `false` | Honor `X-Forwarded-*` headers. Set `true` behind a reverse proxy. |
 | `OPENTASK_UPLOAD_MAX_MB` | `25` | Maximum size (MB) for attachment and Ramble audio uploads. |
 
+## Demo mode
+
+For running a **public sandbox** — a throwaway instance strangers can poke at. See
+[Run a disposable demo](install.md#run-a-disposable-demo) for the full recipe.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `OPENTASK_DEMO_MODE` | `false` | Turn the instance into a public sandbox: publishes the demo credentials on `/api/v1/info`, shows a reset banner in the app, hides the Settings pages it disables, and **refuses** every write listed below. Also forces the update check off and skips the nightly backup job. |
+| `OPENTASK_DEMO_RESET_SECONDS` | `1800` | How long each demo cycle lasts. Only used to report `resets_at` on `/api/v1/info` so the app can count down — the actual wipe is performed by the supervisor script, so keep the two in step. |
+
+Writes refused in demo mode (reads still work everywhere, so the UI stays browsable):
+notification channels, the Todoist importer, attachments, Rambles, backups and restore, API
+tokens, push subscriptions, the iCal token, provider integrations, `PATCH /user`, and the
+better-auth account mutations (change password/email, delete user, 2FA, API keys). These are the
+surfaces that would otherwise let a visitor reach out of the container, fill the disk, or lock
+everyone else out. Everything else — tasks, projects, sections, labels, filters, search,
+comments, Quick Add, recurrence, boards, productivity, export — behaves normally.
+
+> Demo mode is **not** a hardening layer for a private instance. It assumes the data is
+> disposable and the credentials are public.
+
 ## Backups
 
 See the [Backups guide](backups.md) for how snapshots, retention, and restore

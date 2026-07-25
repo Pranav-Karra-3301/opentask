@@ -120,6 +120,17 @@ export const InfoSchema = z
       .partial()
       .passthrough(),
     available_importers: z.array(z.string()).default([]),
+    /** Public-sandbox facts; null (or absent, on an older server) on a normal instance.
+     *  The credentials are published on purpose so LoginPage can offer one-click access. */
+    demo_mode: z
+      .object({
+        enabled: z.literal(true),
+        resets_at: z.string(),
+        reset_seconds: z.number(),
+        email: z.string(),
+        password: z.string(),
+      })
+      .nullish(),
   })
   .passthrough() // passthrough: phase 9 adds `update`
 export type Info = z.infer<typeof InfoSchema>
