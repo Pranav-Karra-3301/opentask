@@ -1,0 +1,12 @@
+# Keep the upload to source only — the CLI otherwise walks the whole workspace, including
+# every node_modules tree, and the deploy stalls before it ever reaches Vercel.
+node_modules
+**/node_modules
+.git
+.next
+**/.next
+apps/web/dist
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen
+**/*.tsbuildinfo
+data
