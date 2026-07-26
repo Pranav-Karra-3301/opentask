@@ -34,7 +34,7 @@ docker exec -e OPENTASK_TOKEN=ot_… opentask od today
 > CLI outside the container today, build it from a source checkout:
 >
 > ```sh
-> git clone https://github.com/pranav-karra-3301/opentask.git && cd opentask
+> git clone https://github.com/junkdrawerlab/opentask.git && cd opentask
 > pnpm install && pnpm --filter opentask build
 > node packages/cli/dist/index.js --help
 > ```

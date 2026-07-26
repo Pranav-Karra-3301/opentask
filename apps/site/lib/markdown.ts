@@ -45,7 +45,7 @@ export const DOC_TITLES: Record<string, string> = {
   install: 'Install & first run',
   configuration: 'Configuration',
   'import-todoist': 'Import from Todoist',
-  'voice-ramble': 'Ramble — voice capture',
+  'voice-ramble': 'Ramble: voice capture',
   backups: 'Backups & restore',
   api: 'REST API',
   cli: 'Command-line client',

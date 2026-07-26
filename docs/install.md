@@ -156,13 +156,13 @@ docker run -d --name opentask-demo -p 7969:7969 \
   --entrypoint /bin/sh ghcr.io/pranav-karra-3301/opentask /demo-entrypoint.sh
 ```
 
-Log in with **`demo@opentask.local` / `opentask-demo`** — the sign-in page offers a one-click
+Log in with **`demo@opentask.local` / `opentask-demo`**. The sign-in page offers a one-click
 button, because demo mode publishes those credentials on `/api/v1/info` on purpose.
 
 How it works ([`deploy/demo/entrypoint.sh`](../deploy/demo/entrypoint.sh)): each cycle wipes
 `/data`, runs the seeder with the server **down** (so nothing else holds the SQLite WAL), then
 serves under `timeout` until the interval elapses. It re-seeds rather than restoring a snapshot
-because the sample dataset resolves *relative* dates at seed time — a golden copy would show
+because the sample dataset resolves *relative* dates at seed time, so a golden copy would show
 yesterday's "today". Expect ~10 seconds of downtime per cycle; the in-app banner counts down to
 it, and `resets_at` on `/api/v1/info` is the same clock.
 
@@ -171,8 +171,8 @@ Notes:
 - `/data` is a **tmpfs** on purpose. The demo has nothing worth persisting, and a restart should
   always come up clean. The `uid=1000` option matters: the image runs as `node`, which has to be
   able to delete `/data/*` every cycle.
-- The memory cap is not decoration. It guarantees a hammered demo is OOM-killed and restarted —
-  which, for a demo, is just an early reset — instead of starving whatever else shares the host.
+- The memory cap is not decoration. It guarantees a hammered demo is OOM-killed and restarted
+  (which, for a demo, is just an early reset) instead of starving whatever else shares the host.
 - See [Configuration → Demo mode](configuration.md#demo-mode) for exactly what gets refused.
 
 ## Off-host replication

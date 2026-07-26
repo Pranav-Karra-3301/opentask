@@ -50,6 +50,24 @@ export function DocsNav({ items }: { items: DocsNavItem[] }) {
           )
         })}
       </ul>
+      <p className="mt-6 px-3 font-medium text-[12px] text-text-tertiary uppercase tracking-[0.08em]">
+        Reference
+      </p>
+      <ul className="mt-2 space-y-0.5">
+        <li>
+          <Link
+            href="/api"
+            aria-current={pathname === '/api' ? 'page' : undefined}
+            className={`block rounded-sm px-3 py-1.5 text-[14px] transition-colors ${
+              pathname === '/api'
+                ? 'bg-accent-soft font-medium text-accent'
+                : 'text-text-secondary hover:bg-hover hover:text-text-primary'
+            }`}
+          >
+            API reference
+          </Link>
+        </li>
+      </ul>
     </nav>
   )
 }

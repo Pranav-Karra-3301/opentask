@@ -32,7 +32,7 @@ const GROUPS = [
 
 export function Footer() {
   return (
-    <footer className="mt-24 border-border border-t bg-surface">
+    <footer className="mt-20">
       <div className="mx-auto grid max-w-[var(--site-max)] gap-10 px-5 py-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_repeat(3,1fr)]">
         <div>
           <div className="flex items-center gap-2 font-semibold text-text-primary">
@@ -40,12 +40,12 @@ export function Footer() {
             OpenTask
           </div>
           <p className="mt-3 max-w-xs text-[13px] text-text-tertiary leading-relaxed">
-            A task manager you run yourself. One container, one volume, one account — no cloud, no
+            A task manager you run yourself. One container, one volume, one account. No cloud, no
             subscription, no second user you never wanted.
           </p>
           <a
             href={DEMO_URL}
-            className="mt-4 inline-block rounded-sm bg-accent px-3.5 py-2 font-medium text-[13px] text-on-accent transition-colors hover:bg-accent-hover"
+            className="mt-4 inline-block rounded-full bg-accent px-3.5 py-2 font-medium text-[13px] text-on-accent transition-colors hover:bg-accent-hover"
           >
             Try the demo
           </a>
@@ -79,7 +79,7 @@ export function Footer() {
           </div>
         ))}
       </div>
-      <div className="border-border border-t">
+      <div>
         <div className="mx-auto flex max-w-[var(--site-max)] flex-wrap items-center justify-between gap-2 px-5 py-5 text-[12px] text-text-tertiary">
           <p>
             Built by{' '}

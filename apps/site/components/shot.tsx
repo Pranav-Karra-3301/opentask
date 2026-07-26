@@ -1,10 +1,17 @@
+import manifest from '@/public/screenshots/manifest.json'
+
 /**
  * A screenshot in a browser-ish frame, with the light and dark captures swapped by CSS so the
  * figure always matches the page's theme. Both sources ship in the HTML; `<picture>` cannot key
  * off our `data-theme` attribute, so the swap is done with two <img>s and `dark:` utilities.
  *
- * Sources come from `pnpm screenshots` (scripts/capture-screenshots.mjs → WebP at 1440/720).
+ * Sources and dimensions both come from `pnpm screenshots`
+ * (scripts/capture-screenshots.mjs → WebP at 1440/720 + manifest.json). Each capture is cropped
+ * to its own subject, so they do NOT share an aspect ratio — the intrinsic size has to be read
+ * per image or every figure causes layout shift.
  */
+const sizes: Record<string, { width: number; height: number }> = manifest
+
 export function Shot({
   name,
   alt,
@@ -17,16 +24,19 @@ export function Shot({
   priority?: boolean
   className?: string
 }) {
+  const light = sizes[name] ?? { width: 1440, height: 900 }
+  const dark = sizes[`${name}-dark`] ?? light
   const common = 'w-full h-auto'
-  const sizes = '(min-width: 1024px) 1024px, 100vw'
+  const sizesAttr = '(min-width: 1024px) 1024px, 100vw'
+
   return (
     <div
-      className={`overflow-hidden rounded-xl border border-border bg-surface-raised shadow-[0_20px_60px_-25px_rgb(0_0_0/0.35)] ${className}`}
+      className={`overflow-hidden rounded-xl border border-border bg-surface-raised shadow-[0_18px_50px_-30px_rgb(0_0_0/0.45)] ${className}`}
     >
-      {/* Chrome bar — pure decoration, hidden from the a11y tree. */}
+      {/* Chrome bar, pure decoration and hidden from the a11y tree. */}
       <div
         aria-hidden="true"
-        className="flex h-8 items-center gap-1.5 border-border border-b bg-surface px-3.5"
+        className="flex h-8 items-center gap-1.5 border-border/70 border-b px-3.5"
       >
         <span className="size-2.5 rounded-full bg-[#ff5f57]" />
         <span className="size-2.5 rounded-full bg-[#febc2e]" />
@@ -35,10 +45,10 @@ export function Shot({
       <img
         src={`/screenshots/${name}-1440.webp`}
         srcSet={`/screenshots/${name}-720.webp 720w, /screenshots/${name}-1440.webp 1440w`}
-        sizes={sizes}
+        sizes={sizesAttr}
         alt={alt}
-        width={1440}
-        height={900}
+        width={light.width}
+        height={light.height}
         loading={priority ? 'eager' : 'lazy'}
         fetchPriority={priority ? 'high' : undefined}
         decoding="async"
@@ -47,11 +57,11 @@ export function Shot({
       <img
         src={`/screenshots/${name}-dark-1440.webp`}
         srcSet={`/screenshots/${name}-dark-720.webp 720w, /screenshots/${name}-dark-1440.webp 1440w`}
-        sizes={sizes}
+        sizes={sizesAttr}
         alt=""
         aria-hidden="true"
-        width={1440}
-        height={900}
+        width={dark.width}
+        height={dark.height}
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"
         className={`${common} hidden dark:block`}

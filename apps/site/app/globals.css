@@ -28,8 +28,11 @@
   --ot-brand: #3e6737;
 
   /* canvas & surfaces */
+  /* ONE canvas colour for the whole page. There are no alternating section bands and no
+     section dividers; --ot-surface exists only as a faint tint for code blocks and table
+     headers, never as a second page background. */
   --ot-bg: #ffffff;
-  --ot-surface: #fcfcf8; /* accent-tinted, as the app's sidebar */
+  --ot-surface: #f7f7f4;
   --ot-surface-raised: #ffffff;
   --ot-hover: #f3f3f3;
 
@@ -67,9 +70,9 @@
   --ot-brand: #80aa73;
 
   --ot-bg: #1e1e1e;
-  --ot-surface: #262626;
-  --ot-surface-raised: #282828;
-  --ot-hover: #363636;
+  --ot-surface: #252525;
+  --ot-surface-raised: #232323;
+  --ot-hover: #303030;
 
   --ot-border: #3d3d3d;
   --ot-border-subtle: #282828;
@@ -165,9 +168,7 @@ body {
 }
 .prose h2 {
   font-size: 1.375rem;
-  margin-top: 2.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--ot-border);
+  margin-top: 2.75rem;
   letter-spacing: -0.01em;
 }
 .prose h3 {
@@ -234,8 +235,7 @@ body {
 }
 .prose hr {
   border: 0;
-  border-top: 1px solid var(--ot-border);
-  margin: 2rem 0;
+  margin: 2.5rem 0;
 }
 .prose img {
   max-width: 100%;
@@ -324,4 +324,21 @@ body {
 }
 .hljs-deletion {
   color: var(--ot-danger);
+}
+
+/* ---------- Scalar API reference ----------
+   Scalar renders into the light DOM, so plain global rules reach it.
+
+   "Ask AI" is Scalar's hosted agent button. It has no configuration flag (`mcp: {disabled:true}`
+   and the `customCss` option both leave it in place), and a self-hosted project's API reference
+   has no business routing visitors to someone else's model. The product toolbar next to it is
+   switched off properly, via `showDeveloperTools: 'never'`. */
+.agent-button-container {
+  display: none !important;
+}
+/* The second "Ask AI" lives in the sidebar beside Search. They are siblings in the same row and
+   share a class, so it is selected by position. This degrades safely: if Scalar reorders the row
+   the button simply reappears, it never hides Search. */
+.scalar-app aside .flex.gap-1\.5 > button:nth-of-type(2) {
+  display: none !important;
 }

@@ -1,0 +1,74 @@
+{
+  "hero": {
+    "width": 1440,
+    "height": 460
+  },
+  "upcoming": {
+    "width": 1440,
+    "height": 900
+  },
+  "project": {
+    "width": 1440,
+    "height": 673
+  },
+  "board": {
+    "width": 1440,
+    "height": 460
+  },
+  "filter": {
+    "width": 1440,
+    "height": 460
+  },
+  "reporting": {
+    "width": 1440,
+    "height": 460
+  },
+  "quick-add": {
+    "width": 820,
+    "height": 443
+  },
+  "palette": {
+    "width": 772,
+    "height": 591
+  },
+  "hero-dark": {
+    "width": 1440,
+    "height": 460
+  },
+  "upcoming-dark": {
+    "width": 1440,
+    "height": 900
+  },
+  "project-dark": {
+    "width": 1440,
+    "height": 673
+  },
+  "board-dark": {
+    "width": 1440,
+    "height": 460
+  },
+  "filter-dark": {
+    "width": 1440,
+    "height": 460
+  },
+  "reporting-dark": {
+    "width": 1440,
+    "height": 460
+  },
+  "quick-add-dark": {
+    "width": 820,
+    "height": 445
+  },
+  "palette-dark": {
+    "width": 772,
+    "height": 593
+  },
+  "mobile": {
+    "width": 390,
+    "height": 844
+  },
+  "mobile-dark": {
+    "width": 390,
+    "height": 844
+  }
+}

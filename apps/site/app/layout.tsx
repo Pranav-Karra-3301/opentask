@@ -5,12 +5,12 @@ import { SITE_URL } from '@/lib/site'
 import './globals.css'
 
 const description =
-  'Self-hosted, single-user, keyboard-first task manager — an open Todoist alternative. One container, one volume, one account. Quick Add grammar, recurrence, filters, reminders, iCal, and a REST API.'
+  'Self-hosted, single-user, keyboard-first task manager: an open Todoist alternative. One container, one volume, one account. Quick Add grammar, recurrence, filters, reminders, iCal, and a REST API.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'OpenTask — the self-hosted Todoist alternative',
+    default: 'OpenTask: the self-hosted Todoist alternative',
     template: '%s | OpenTask',
   },
   description,
@@ -36,13 +36,13 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: SITE_URL,
     siteName: 'OpenTask',
-    title: 'OpenTask — the self-hosted Todoist alternative',
+    title: 'OpenTask: the self-hosted Todoist alternative',
     description,
     images: [{ url: '/og.png', width: 1200, height: 630, alt: 'OpenTask' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'OpenTask — the self-hosted Todoist alternative',
+    title: 'OpenTask: the self-hosted Todoist alternative',
     description,
     images: ['/og.png'],
   },

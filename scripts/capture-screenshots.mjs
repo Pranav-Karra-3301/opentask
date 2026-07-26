@@ -42,7 +42,7 @@
  */
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -72,6 +72,21 @@ const WEBP_WIDTHS = [1440, 720]
 /** A task row is the app's "this view has rendered real data" signal. */
 const taskRow = (page) => page.locator('[id^="task-"]').first()
 
+/** Everything that counts as "content" when measuring how far down a view actually extends. */
+const CONTENT = [
+  'main h1',
+  'main h2',
+  'main h3',
+  'main [id^="task-"]',
+  'main button',
+  'main a',
+  'main [role="button"]',
+]
+/** Full app width, trimmed to where the content actually stops. */
+const fitContent = { fit: CONTENT, pad: 28, fullWidth: true, minHeight: 460 }
+/** A centred dialog, with enough padding that it still reads as sitting inside the app. */
+const fitDialog = { fit: ['[role="dialog"]'], pad: 130, minHeight: 420 }
+
 /**
  * The capture table. Each shot navigates, waits for its own `ready` signal, optionally runs
  * `prepare`, is captured, then optionally `cleanup`s any state it persisted.
@@ -82,18 +97,21 @@ const taskRow = (page) => page.locator('[id^="task-"]').first()
 const SHOTS = [
   {
     name: 'hero',
+    frame: fitContent,
     href: '/today',
     ready: taskRow,
     caption: 'Today — overdue section, priority colors, sidebar',
   },
   {
     name: 'upcoming',
+    frame: fitContent,
     href: '/upcoming',
     ready: (page) => page.getByRole('heading', { name: /^\w+ \d{4}$/ }).first(),
     caption: 'Upcoming — the week strip with drag-between-days',
   },
   {
     name: 'project',
+    frame: fitContent,
     href: null,
     click: 'Work',
     ready: taskRow,
@@ -101,6 +119,7 @@ const SHOTS = [
   },
   {
     name: 'board',
+    frame: fitContent,
     href: null,
     click: 'Work',
     ready: taskRow,
@@ -125,6 +144,7 @@ const SHOTS = [
   },
   {
     name: 'filter',
+    frame: fitContent,
     href: null,
     click: 'Priority focus',
     ready: taskRow,
@@ -132,12 +152,14 @@ const SHOTS = [
   },
   {
     name: 'reporting',
+    frame: fitContent,
     href: '/reporting',
     ready: (page) => page.getByRole('heading', { name: 'Reporting' }).first(),
     caption: 'Productivity — goals, streaks, karma, activity history',
   },
   {
     name: 'quick-add',
+    frame: fitDialog,
     href: '/today',
     ready: taskRow,
     keepFocus: true,
@@ -160,6 +182,7 @@ const SHOTS = [
   },
   {
     name: 'palette',
+    frame: fitDialog,
     href: '/today',
     ready: taskRow,
     keepFocus: true,
@@ -322,26 +345,94 @@ async function settle(page, shot, viewport) {
   await sleep(350)
 }
 
-/** Capture one shot at the current appearance. Returns the written file path. */
+/**
+ * Work out the crop for a shot, so the figure frames its subject instead of a screenful of
+ * empty scroll area. The seed dataset is small — Today holds three tasks — so an uncropped
+ * 1440x900 capture is mostly blank canvas and the interesting part renders tiny on the site.
+ *
+ * `frame.fit` is a list of selectors whose union bounding box is the subject. `fullWidth` keeps
+ * the whole app width (so the sidebar stays in the picture) and trims only vertically, which is
+ * what the list/board views want; the dialog shots crop on both axes with generous padding so
+ * the dialog still reads as sitting inside the app.
+ *
+ * Returns undefined (= full viewport) when a shot declares no frame or nothing matched.
+ */
+async function computeClip(page, shot, viewport) {
+  if (!shot.frame) return undefined
+  const { fit, pad = 28, fullWidth = false, minHeight = 0 } = shot.frame
+  const box = await page.evaluate(
+    ({ selectors, vw, vh }) => {
+      let left = Infinity
+      let top = Infinity
+      let right = -Infinity
+      let bottom = -Infinity
+      let found = false
+      for (const selector of selectors) {
+        for (const el of document.querySelectorAll(selector)) {
+          const r = el.getBoundingClientRect()
+          // Skip zero-size, off-screen, and full-height scroll containers — any of them
+          // would drag the box back out to the whole viewport and defeat the crop.
+          if (r.width <= 0 || r.height <= 0) continue
+          if (r.bottom <= 0 || r.top >= vh || r.right <= 0 || r.left >= vw) continue
+          if (r.height >= vh) continue
+          found = true
+          left = Math.min(left, r.left)
+          top = Math.min(top, r.top)
+          right = Math.max(right, r.right)
+          bottom = Math.max(bottom, r.bottom)
+        }
+      }
+      return found ? { left, top, right, bottom } : null
+    },
+    { selectors: fit, vw: viewport.width, vh: viewport.height },
+  )
+  if (!box) return undefined
+
+  const x = fullWidth ? 0 : Math.max(0, Math.floor(box.left - pad))
+  const right = fullWidth ? viewport.width : Math.min(viewport.width, Math.ceil(box.right + pad))
+  let y = Math.max(0, Math.floor(box.top - pad))
+  let bottom = Math.min(viewport.height, Math.ceil(box.bottom + pad))
+
+  // Sparse views (the saved filter holds two tasks) crop down to a letterbox sliver that
+  // renders ~120px tall on the site. Grow back to a floor — downward first, then upward —
+  // so every figure keeps a sane aspect ratio.
+  if (bottom - y < minHeight) {
+    bottom = Math.min(viewport.height, y + minHeight)
+    if (bottom - y < minHeight) y = Math.max(0, bottom - minHeight)
+  }
+
+  const width = right - x
+  const height = bottom - y
+  // A crop that saved nothing is not worth the odd aspect ratio.
+  if (width < 200 || height < 150) return undefined
+  return { x, y, width, height }
+}
+
+/** Capture one shot at the current appearance. Returns { file, width, height }. */
 async function capture(page, shot, suffix, viewport) {
   await navigate(page, shot)
   if (shot.prepare) await shot.prepare({ page, sleep })
   await settle(page, shot, viewport)
+  const clip = await computeClip(page, shot, viewport)
   const file = join(OUT_DIR, `${shot.name}${suffix}.png`)
-  await page.screenshot({ path: file })
+  await page.screenshot({ path: file, ...(clip ? { clip } : {}) })
   if (shot.cleanup) await shot.cleanup({ page, sleep })
-  return file
+  return {
+    file,
+    width: clip?.width ?? viewport.width,
+    height: clip?.height ?? viewport.height,
+  }
 }
 
 /**
  * Emit WebP derivatives into the site's public dir. `sharp` is already a root devDependency
  * (scripts/generate-icons.mjs is the precedent), so this adds no new dependency.
  */
-async function optimise(files) {
+async function optimise(shots) {
   const { default: sharp } = await import('sharp')
   await mkdir(SITE_IMG_DIR, { recursive: true })
   let written = 0
-  for (const file of files) {
+  for (const { file } of shots) {
     const base = file
       .split('/')
       .pop()
@@ -415,13 +506,31 @@ async function main() {
       throw new Error(`page raised ${pageErrors.length} error(s):\n${pageErrors.join('\n')}`)
     }
 
-    for (const shot of shots) {
-      console.log(`wrote ${OUT_REL}/${shot.split('/').pop()} (${await pngSize(shot)})`)
+    for (const { file } of shots) {
+      console.log(`wrote ${OUT_REL}/${file.split('/').pop()} (${await pngSize(file)})`)
     }
 
-    // 5. WebP derivatives for the site.
+    // 5. WebP derivatives for the site, plus a dimensions manifest. Each shot is cropped to
+    // its own subject now, so they no longer share one aspect ratio and the site cannot
+    // hardcode 1440x900 without causing layout shift.
     const written = await optimise(shots)
-    console.log(`wrote ${written} webp derivative(s) to apps/site/public/screenshots/`)
+    const manifest = Object.fromEntries(
+      shots.map(({ file, width, height }) => [
+        file
+          .split('/')
+          .pop()
+          .replace(/\.png$/, ''),
+        { width, height },
+      ]),
+    )
+    await writeFile(
+      join(SITE_IMG_DIR, 'manifest.json'),
+      `${JSON.stringify(manifest, null, 2)}\n`,
+      'utf8',
+    )
+    console.log(
+      `wrote ${written} webp derivative(s) + manifest.json to apps/site/public/screenshots/`,
+    )
 
     // Guard the README's embeds — renaming these silently breaks the repo's front page.
     const present = new Set(await readdir(OUT_DIR))

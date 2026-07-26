@@ -15,7 +15,7 @@ export async function GET() {
 
   const body = `# OpenTask
 
-> Self-hosted, single-user, keyboard-first task manager — an open, Todoist-compatible
+> Self-hosted, single-user, keyboard-first task manager: an open, Todoist-compatible
 > alternative. One Docker container, one /data volume, one account. AGPL-3.0.
 
 OpenTask implements the Todoist workflow (Quick Add grammar, filter language, keyboard map)
@@ -33,12 +33,13 @@ ${docLines}
 
 ## Other
 
+- [API reference (interactive, OpenAPI)](${SITE_URL}/api)
 - [Changelog](${SITE_URL}/changelog)
 - [Demo](${SITE_URL}/demo)
 
 ## Notes
 
-- Priorities are stored 1 = highest (p1) … 4 = default (p4) — the inverse of Todoist's REST API.
+- Priorities are stored 1 = highest (p1) to 4 = default (p4), the inverse of Todoist's REST API.
 - Not in scope: collaboration/sharing, CalDAV, calendar layout, email reminders, localization.
 `
 

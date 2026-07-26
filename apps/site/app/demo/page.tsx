@@ -18,7 +18,7 @@ const RULES = [
   },
   {
     title: 'Everyone shares one instance',
-    body: 'It is a single container, not a sandbox per visitor — so you may see edits someone else made a few minutes ago. That is the demo working, not breaking.',
+    body: 'It is a single container, not a sandbox per visitor, so you may see edits someone else made a few minutes ago. That is the demo working, not breaking.',
   },
   {
     title: 'Some things are switched off',
@@ -42,7 +42,7 @@ export default function DemoPage() {
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-pretty text-[16.5px] text-text-secondary leading-relaxed">
           A real OpenTask instance, pre-loaded with sample projects and tasks. No signup, no email,
-          no cookie banner — one button and you are in.
+          no cookie banner. One button and you are in.
         </p>
         <a
           href={DEMO_URL}
@@ -102,7 +102,7 @@ export default function DemoPage() {
       <p className="mx-auto mt-10 max-w-3xl text-center text-[13px] text-text-tertiary">
         Want a disposable instance of your own? Any OpenTask container started with{' '}
         <code className="font-mono text-[12.5px]">OPENTASK_DEMO_MODE=true</code> behaves exactly
-        like this one — see{' '}
+        like this one. See{' '}
         <Link href="/docs/install" className="text-accent hover:underline">
           the install guide
         </Link>
