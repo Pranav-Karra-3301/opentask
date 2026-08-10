@@ -7,7 +7,7 @@
  *   3. boot the server (`tsx src/index.ts`) on a random port, serving that dist + DB
  *   4. drive headless Chromium (1440x900 @2x) through the SHOTS table below, once in light
  *      and once in dark, then again at a phone viewport for the mobile shots
- *   5. optimise every PNG into WebP at two widths, into the site's public dir
+ *   5. optimise every PNG into WebP at two sizes, into the site's public dir
  *   6. tear everything down
  *
  * Outputs (see SHOTS): `docs/screenshots/<name>.png` and `<name>-dark.png`. The three names the
@@ -66,7 +66,20 @@ const DEMO = { email: 'demo@opentask.local', password: 'opentask-demo' }
 const VIEWPORT = { width: 1440, height: 900 }
 /** iPhone-15-ish logical viewport, for the PWA/mobile story on the site. */
 const MOBILE_VIEWPORT = { width: 390, height: 844 }
-/** Widths emitted as WebP for the site's <img srcset>. */
+/**
+ * Every desktop figure ships at ONE aspect ratio and ONE pixel size. Shots differ only in how
+ * far they are zoomed in: each crop frames its own subject, then grows on its short axis until
+ * it matches this ratio, and the derivative is scaled to exactly these dimensions. The site can
+ * therefore lay figures out on a single fixed box with no shape-hopping between sections.
+ */
+const FIGURE = { width: 1440, height: 900 }
+const ASPECT = FIGURE.width / FIGURE.height
+/**
+ * Floor on a crop's CSS width. At deviceScaleFactor 2 this is 1520 real pixels, so even the
+ * tightest zoom downscales into the 1440-wide derivative rather than being blown up.
+ */
+const MIN_FRAME_WIDTH = 760
+/** Widths emitted as WebP for the site's <img srcset>; desktop heights follow ASPECT. */
 const WEBP_WIDTHS = [1440, 720]
 
 /** A task row is the app's "this view has rendered real data" signal. */
@@ -82,10 +95,18 @@ const CONTENT = [
   'main a',
   'main [role="button"]',
 ]
-/** Full app width, trimmed to where the content actually stops. */
-const fitContent = { fit: CONTENT, pad: 28, fullWidth: true, minHeight: 460 }
+/** The establishing shot: anchored at the app's left edge, so the sidebar stays in the picture. */
+const fitApp = { fit: CONTENT, pad: 28, anchor: 'left' }
+/** Zoomed onto the view's own content, sidebar left out of frame. */
+const fitSubject = { fit: CONTENT, pad: 28 }
+/**
+ * The whole content pane, sidebar to right edge, with the height falling out of ASPECT. For views
+ * whose content runs the full width (the board's columns), a tighter crop would slice the view's
+ * own header controls, which reads as a broken capture rather than a zoom.
+ */
+const fitPane = { fit: CONTENT, pad: 28, anchor: 'pane' }
 /** A centred dialog, with enough padding that it still reads as sitting inside the app. */
-const fitDialog = { fit: ['[role="dialog"]'], pad: 130, minHeight: 420 }
+const fitDialog = { fit: ['[role="dialog"]'], pad: 120 }
 
 /**
  * The capture table. Each shot navigates, waits for its own `ready` signal, optionally runs
@@ -97,21 +118,21 @@ const fitDialog = { fit: ['[role="dialog"]'], pad: 130, minHeight: 420 }
 const SHOTS = [
   {
     name: 'hero',
-    frame: fitContent,
+    frame: fitApp,
     href: '/today',
     ready: taskRow,
     caption: 'Today — overdue section, priority colors, sidebar',
   },
   {
     name: 'upcoming',
-    frame: fitContent,
+    frame: fitSubject,
     href: '/upcoming',
     ready: (page) => page.getByRole('heading', { name: /^\w+ \d{4}$/ }).first(),
     caption: 'Upcoming — the week strip with drag-between-days',
   },
   {
     name: 'project',
-    frame: fitContent,
+    frame: fitApp,
     href: null,
     click: 'Work',
     ready: taskRow,
@@ -119,7 +140,7 @@ const SHOTS = [
   },
   {
     name: 'board',
-    frame: fitContent,
+    frame: fitPane,
     href: null,
     click: 'Work',
     ready: taskRow,
@@ -144,7 +165,7 @@ const SHOTS = [
   },
   {
     name: 'filter',
-    frame: fitContent,
+    frame: fitSubject,
     href: null,
     click: 'Priority focus',
     ready: taskRow,
@@ -152,7 +173,7 @@ const SHOTS = [
   },
   {
     name: 'reporting',
-    frame: fitContent,
+    frame: fitSubject,
     href: '/reporting',
     ready: (page) => page.getByRole('heading', { name: 'Reporting' }).first(),
     caption: 'Productivity — goals, streaks, karma, activity history',
@@ -328,14 +349,15 @@ async function navigate(page, shot) {
  * Driving the UI with a real mouse leaves artefacts that look like bugs in a marketing shot:
  * the pointer sits wherever the last click landed (leaving a hover state — e.g. the board's
  * trailing "Add section" column lit up), and the last-clicked control keeps a :focus-visible
- * ring. Parking the pointer in the empty bottom-centre of the scroll area clears the hover;
- * blurring clears the ring.
+ * ring. Blurring clears the ring; parking the pointer in the bottom-right corner clears the
+ * hover, and that corner is the one spot no view fills — the bottom-centre used to be inside the
+ * content column, so a long list (Upcoming) came out with a row's hover controls showing.
  *
  * Shots whose subject IS a focused surface (Quick Add's input, the command palette) opt out
  * with `keepFocus` — blurring those would close or visually break the thing being shown.
  */
 async function settle(page, shot, viewport) {
-  await page.mouse.move(Math.round(viewport.width / 2), viewport.height - 40)
+  await page.mouse.move(viewport.width - 4, viewport.height - 4)
   if (shot.keepFocus !== true) {
     await page.evaluate(() => {
       const el = document.activeElement
@@ -350,16 +372,21 @@ async function settle(page, shot, viewport) {
  * empty scroll area. The seed dataset is small — Today holds three tasks — so an uncropped
  * 1440x900 capture is mostly blank canvas and the interesting part renders tiny on the site.
  *
- * `frame.fit` is a list of selectors whose union bounding box is the subject. `fullWidth` keeps
- * the whole app width (so the sidebar stays in the picture) and trims only vertically, which is
- * what the list/board views want; the dialog shots crop on both axes with generous padding so
- * the dialog still reads as sitting inside the app.
+ * Every crop is locked to ASPECT: the subject's padded bounding box is grown on whichever axis
+ * is short until the window matches the figure ratio, then slid (never squashed) back inside the
+ * viewport. So shots vary in zoom, never in shape — which is the whole point, since the site
+ * renders them all in one fixed box.
  *
- * Returns undefined (= full viewport) when a shot declares no frame or nothing matched.
+ * `frame.fit` is a list of selectors whose union bounding box is the subject. `anchor: 'left'`
+ * pins the window to the app's left edge, so widening keeps the sidebar in the picture instead
+ * of centring on the content column; the dialog shots centre on their subject instead.
+ *
+ * Returns undefined (= full viewport, which already has ASPECT) when a shot declares no frame,
+ * nothing matched, or the ratio-locked window grew past the viewport.
  */
 async function computeClip(page, shot, viewport) {
   if (!shot.frame) return undefined
-  const { fit, pad = 28, fullWidth = false, minHeight = 0 } = shot.frame
+  const { fit, pad = 28, anchor = 'center' } = shot.frame
   const box = await page.evaluate(
     ({ selectors, vw, vh }) => {
       let left = Infinity
@@ -382,30 +409,90 @@ async function computeClip(page, shot, viewport) {
           bottom = Math.max(bottom, r.bottom)
         }
       }
-      return found ? { left, top, right, bottom } : null
+      const aside = document.querySelector('aside[aria-label="Sidebar"]')
+      const sidebarRight = aside === null ? 0 : aside.getBoundingClientRect().right
+      return found ? { left, top, right, bottom, sidebarRight } : null
     },
     { selectors: fit, vw: viewport.width, vh: viewport.height },
   )
   if (!box) return undefined
 
-  const x = fullWidth ? 0 : Math.max(0, Math.floor(box.left - pad))
-  const right = fullWidth ? viewport.width : Math.min(viewport.width, Math.ceil(box.right + pad))
-  let y = Math.max(0, Math.floor(box.top - pad))
-  let bottom = Math.min(viewport.height, Math.ceil(box.bottom + pad))
+  let left = anchor === 'left' ? 0 : anchor === 'pane' ? box.sidebarRight : box.left - pad
+  let right = anchor === 'pane' ? viewport.width : box.right + pad
+  let top = box.top - pad
+  let bottom = box.bottom + pad
 
-  // Sparse views (the saved filter holds two tasks) crop down to a letterbox sliver that
-  // renders ~120px tall on the site. Grow back to a floor — downward first, then upward —
-  // so every figure keeps a sane aspect ratio.
-  if (bottom - y < minHeight) {
-    bottom = Math.min(viewport.height, y + minHeight)
-    if (bottom - y < minHeight) y = Math.max(0, bottom - minHeight)
+  /** Grow the window to ASPECT, then to the width floor. Left-anchored windows only grow right. */
+  const widen = (target) => {
+    const grow = target - (right - left)
+    if (grow <= 0) return
+    if (anchor === 'left') right += grow
+    else if (anchor === 'pane') return
+    else {
+      left -= grow / 2
+      right += grow / 2
+    }
+  }
+  const heighten = (target) => {
+    const grow = target - (bottom - top)
+    if (grow <= 0) return
+    top -= grow / 2
+    bottom += grow / 2
   }
 
-  const width = right - x
-  const height = bottom - y
-  // A crop that saved nothing is not worth the odd aspect ratio.
-  if (width < 200 || height < 150) return undefined
-  return { x, y, width, height }
+  if (anchor === 'pane') {
+    // The pane's width is fixed, so the height just follows it: pad the window out to ASPECT, or
+    // (for content taller than that) keep the top of the view and let the rest run past the edge.
+    const target = (right - left) / ASPECT
+    if (bottom - top < target) heighten(target)
+    else bottom = top + target
+  } else if ((right - left) / (bottom - top) < ASPECT) widen((bottom - top) * ASPECT)
+  else heighten((right - left) / ASPECT)
+  // Zoom back out if the subject alone is too small to fill the derivative at native pixels.
+  if (right - left < MIN_FRAME_WIDTH) {
+    widen(MIN_FRAME_WIDTH)
+    heighten(MIN_FRAME_WIDTH / ASPECT)
+  }
+
+  // Slide the window back inside the viewport. Shifting rather than clipping is what keeps the
+  // ratio exact; a window that still overhangs is larger than the viewport on both axes (the
+  // viewport shares ASPECT), so there is nothing left to crop.
+  if (left < 0) {
+    right -= left
+    left = 0
+  }
+  if (top < 0) {
+    bottom -= top
+    top = 0
+  }
+  if (right > viewport.width) {
+    left -= right - viewport.width
+    right = viewport.width
+  }
+  if (bottom > viewport.height) {
+    top -= bottom - viewport.height
+    bottom = viewport.height
+  }
+  if (left < -0.5 || top < -0.5) return undefined
+
+  // The sidebar is all or nothing. A window whose left edge lands inside it shows a slice of
+  // half-cut icons and orphaned badge counts, which reads as a broken capture — so slide clear
+  // of it, and if the window is too wide to fit beside it, take the whole app instead.
+  if (anchor !== 'left' && left > 0.5 && left < box.sidebarRight) {
+    const shift = box.sidebarRight - left
+    if (right + shift > viewport.width) return undefined
+    left += shift
+    right += shift
+  }
+
+  const x = Math.max(0, Math.round(left))
+  const y = Math.max(0, Math.round(top))
+  return {
+    x,
+    y,
+    width: Math.min(viewport.width - x, Math.round(right - left)),
+    height: Math.min(viewport.height - y, Math.round(bottom - top)),
+  }
 }
 
 /** Capture one shot at the current appearance. Returns { file, width, height }. */
@@ -419,6 +506,7 @@ async function capture(page, shot, suffix, viewport) {
   if (shot.cleanup) await shot.cleanup({ page, sleep })
   return {
     file,
+    mobile: shot.mobile === true,
     width: clip?.width ?? viewport.width,
     height: clip?.height ?? viewport.height,
   }
@@ -427,12 +515,17 @@ async function capture(page, shot, suffix, viewport) {
 /**
  * Emit WebP derivatives into the site's public dir. `sharp` is already a root devDependency
  * (scripts/generate-icons.mjs is the precedent), so this adds no new dependency.
+ *
+ * Desktop derivatives are resized to the exact FIGURE box at each srcset width, so the varying
+ * zoom levels all land on identical pixel dimensions. The crops already carry ASPECT, so `cover`
+ * only absorbs the sub-pixel rounding from computeClip. The phone shot keeps its own portrait
+ * shape — it is a device frame, not one of the uniform figures.
  */
 async function optimise(shots) {
   const { default: sharp } = await import('sharp')
   await mkdir(SITE_IMG_DIR, { recursive: true })
   let written = 0
-  for (const { file } of shots) {
+  for (const { file, mobile } of shots) {
     const base = file
       .split('/')
       .pop()
@@ -440,9 +533,13 @@ async function optimise(shots) {
     const meta = await sharp(file).metadata()
     for (const width of WEBP_WIDTHS) {
       // Never upscale — a 390px-wide mobile capture has no business becoming 1440.
-      if (meta.width < width) continue
+      if (mobile && meta.width < width) continue
       const out = join(SITE_IMG_DIR, `${base}-${width}.webp`)
-      await sharp(file).resize({ width }).webp({ quality: 82 }).toFile(out)
+      const resize = mobile ? { width } : { width, height: Math.round(width / ASPECT) }
+      await sharp(file)
+        .resize({ ...resize, fit: 'cover' })
+        .webp({ quality: 82 })
+        .toFile(out)
       written++
     }
   }
@@ -510,17 +607,17 @@ async function main() {
       console.log(`wrote ${OUT_REL}/${file.split('/').pop()} (${await pngSize(file)})`)
     }
 
-    // 5. WebP derivatives for the site, plus a dimensions manifest. Each shot is cropped to
-    // its own subject now, so they no longer share one aspect ratio and the site cannot
-    // hardcode 1440x900 without causing layout shift.
+    // 5. WebP derivatives for the site, plus a dimensions manifest. Every desktop derivative is
+    // the same FIGURE box (the crops differ in zoom, not shape); only the phone shot has its own
+    // dimensions, which is why the manifest still exists.
     const written = await optimise(shots)
     const manifest = Object.fromEntries(
-      shots.map(({ file, width, height }) => [
+      shots.map(({ file, mobile, width, height }) => [
         file
           .split('/')
           .pop()
           .replace(/\.png$/, ''),
-        { width, height },
+        mobile ? { width, height } : { ...FIGURE },
       ]),
     )
     await writeFile(

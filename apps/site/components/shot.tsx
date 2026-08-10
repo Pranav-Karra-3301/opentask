@@ -6,9 +6,10 @@ import manifest from '@/public/screenshots/manifest.json'
  * off our `data-theme` attribute, so the swap is done with two <img>s and `dark:` utilities.
  *
  * Sources and dimensions both come from `pnpm screenshots`
- * (scripts/capture-screenshots.mjs → WebP at 1440/720 + manifest.json). Each capture is cropped
- * to its own subject, so they do NOT share an aspect ratio — the intrinsic size has to be read
- * per image or every figure causes layout shift.
+ * (scripts/capture-screenshots.mjs → WebP at 1440/720 + manifest.json). Every desktop capture is
+ * cropped to a different zoom level but the same 16:10 box, so the figures share one shape; the
+ * phone shot is portrait. Dimensions are still read per image, so a shot that later changes shape
+ * cannot silently reintroduce layout shift.
  */
 const sizes: Record<string, { width: number; height: number }> = manifest
 

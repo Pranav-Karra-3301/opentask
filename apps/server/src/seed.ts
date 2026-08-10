@@ -96,7 +96,9 @@ const SEED_FILTERS: { name: string; query: string; color: string; favorite: bool
 /** Quick Add strings fed verbatim through `parseQuickAdd`. `#"Reading List"` is the grammar-quoted
  *  form of the frozen `#Reading List` (see the module docstring). */
 const SEED_OPEN_TASKS: string[] = [
-  'Ship weekly status update today 4pm p2 #Work /Admin @email',
+  // No "weekly": the Quick Add grammar reads it as a recurrence, which pushed this task off
+  // Today (the one date the demo and the screenshots both lean on) and onto next week.
+  'Ship the status update today 4pm p2 #Work /Admin @email',
   'Prepare board deck tom 10am for 45min p1 #Work /Meetings @deep-work {friday}',
   'Review pull requests every workday 9am p3 #Work',
   '1:1 with future self every mon 2pm #Work /Meetings',
