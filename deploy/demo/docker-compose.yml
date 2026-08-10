@@ -1,0 +1,41 @@
+# OpenTask — public demo deployment.
+#
+# A throwaway instance that wipes and re-seeds itself on a timer. Everything abusable is refused
+# by the server (OPENTASK_DEMO_MODE — see apps/server/src/demo.ts), so this is safe to expose.
+#
+#   docker compose -f deploy/demo/docker-compose.yml up -d
+#
+# The data directory is a tmpfs on purpose: the demo has nothing worth persisting, a wipe every
+# cycle would otherwise churn the disk, and a container restart should always come up clean.
+services:
+  opentask-demo:
+    image: ghcr.io/pranav-karra-3301/opentask:${OPENTASK_VERSION:-latest}
+    container_name: opentask-demo
+    restart: always
+    # 7969, not 7968: on the production VM this runs alongside the real instance.
+    ports: ["7969:7969"]
+    # The image's CMD runs the server directly; the demo needs the supervisor loop instead.
+    entrypoint: ["/bin/sh", "/demo-entrypoint.sh"]
+    volumes:
+      - ./entrypoint.sh:/demo-entrypoint.sh:ro
+    tmpfs:
+      # uid 1000 = the image's `node` user, which must be able to delete /data/* every cycle.
+      - /data:uid=1000,gid=1000,mode=0700,size=256m
+    environment:
+      OPENTASK_PORT: "7969"
+      OPENTASK_DEMO_MODE: "true"
+      OPENTASK_DEMO_RESET_SECONDS: "1800"
+      OPENTASK_PUBLIC_URL: "https://tryopentask.pranavkarra.me"
+      OPENTASK_TRUST_PROXY: "true"
+      OPENTASK_LOG_LEVEL: "info"
+    # A hard cap so a hammered demo is OOM-killed and restarted (clean, by definition) instead of
+    # starving anything else on the host. Raise it if the container starts flapping.
+    mem_limit: 280m
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:7969/api/health"]
+      interval: 30s
+      timeout: 10s
+      # Generous: every reset cycle has a ~10s window where the server is down by design.
+      start_period: 60s
+      retries: 5

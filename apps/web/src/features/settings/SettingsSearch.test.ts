@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SETTINGS_PAGES, type SettingsPageDef } from './registry'
+import { SETTINGS_PAGES, type SettingsPageDef, visibleSettingsPages } from './registry'
 import { filterSettingsPages, matchSettingsPage, splitHighlight } from './SettingsSearch'
 
 function pageByKey(key: string): SettingsPageDef {
@@ -52,6 +52,29 @@ describe('filterSettingsPages', () => {
 
   it('returns nothing for an unmatched query', () => {
     expect(filterSettingsPages(SETTINGS_PAGES, 'xyzzy')).toEqual([])
+  })
+})
+
+describe('visibleSettingsPages', () => {
+  it('is the identity on a normal instance', () => {
+    expect(visibleSettingsPages(SETTINGS_PAGES, false)).toEqual(SETTINGS_PAGES)
+  })
+
+  it('drops exactly the pages whose writes the server refuses in demo mode', () => {
+    const keys = visibleSettingsPages(SETTINGS_PAGES, true).map((page) => page.key)
+    for (const hidden of ['account', 'notifications', 'backups', 'import', 'integrations']) {
+      expect(keys, hidden).not.toContain(hidden)
+    }
+    // The pages worth showing off must survive — a demo with no Theme page is a bad demo.
+    for (const shown of ['general', 'theme', 'sidebar', 'quick-add', 'productivity', 'about']) {
+      expect(keys, shown).toContain(shown)
+    }
+  })
+
+  it('leaves a usable first page, since that is the demo fallback target', () => {
+    // SettingsLayout and the command palette both navigate to pages[0] when the requested
+    // page is missing — an empty list there would loop the redirect.
+    expect(visibleSettingsPages(SETTINGS_PAGES, true)[0]?.key).toBe('general')
   })
 })
 

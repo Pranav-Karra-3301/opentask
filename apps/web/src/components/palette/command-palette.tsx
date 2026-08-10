@@ -32,6 +32,7 @@ import {
   Tag,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useDemo } from '@/api/hooks/info'
 import { useLabels } from '@/api/hooks/labels'
 import { useProjects } from '@/api/hooks/projects'
 import { useActiveTasks } from '@/api/hooks/tasks'
@@ -46,7 +47,7 @@ import {
   CommandShortcut,
 } from '@/components/ui/command'
 import { parseSnippet, useServerSearch } from '@/features/search/useServerSearch'
-import { SETTINGS_PAGES } from '@/features/settings/registry'
+import { SETTINGS_PAGES, visibleSettingsPages } from '@/features/settings/registry'
 import { useUserSettings } from '@/features/settings/useSettings'
 import {
   settingsPatchForChoice,
@@ -165,6 +166,7 @@ export function CommandPalette() {
   const { data: projects } = useProjects()
   const { data: labels } = useLabels()
   const activeTasks = useActiveTasks()
+  const demo = useDemo()
   // Theme commands write through the account settings (single source of truth; the
   // AppLayout-mounted useThemeSync repaints + mirrors to localStorage optimistically).
   const { settings, update: updateSettings } = useUserSettings()
@@ -328,6 +330,10 @@ export function CommandPalette() {
     },
   ]
 
+  // A demo instance hides the pages whose writes the server refuses, so the palette must not
+  // offer them either — including the bare "Settings" command, whose Account target is one of
+  // the hidden ones.
+  const settingsPages = visibleSettingsPages(SETTINGS_PAGES, demo !== null)
   const settingsCommands: PaletteCommand[] = [
     {
       id: 'settings',
@@ -336,10 +342,13 @@ export function CommandPalette() {
       icon: Settings,
       hint: 'O S',
       run: () => {
-        void navigate({ to: '/settings/$page', params: { page: 'account' } })
+        void navigate({
+          to: '/settings/$page',
+          params: { page: settingsPages[0]?.key ?? 'general' },
+        })
       },
     },
-    ...SETTINGS_PAGES.map(
+    ...settingsPages.map(
       (page): PaletteCommand => ({
         id: `settings-${page.key}`,
         label: `Settings > ${page.title}`,

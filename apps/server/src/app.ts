@@ -26,6 +26,7 @@ import { backupsRouter } from './backups/routes'
 import type { Config } from './config'
 import { user } from './db/auth-schema'
 import type { Db } from './db/db'
+import { DEMO_EMAIL, DEMO_PASSWORD, demoGuard } from './demo'
 import type { EventBus } from './events/bus'
 import { exportRouter } from './export/routes'
 import { icalFeedRoutes, icalTokenRoutes } from './ical/routes'
@@ -76,6 +77,12 @@ function apiKeyScope(permissions: unknown): 'read' | 'read_write' {
 }
 
 export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
+  // Demo countdown anchor. The reset is implemented as "kill the server, wipe /data,
+  // re-seed, restart" (deploy/demo/entrypoint.sh), so this process's own lifetime IS the
+  // time-to-reset — no scheduler, no persisted state, and it survives an OOM-kill restart
+  // because the replacement process re-anchors on its own boot.
+  const bootedAt = Date.now()
+
   // 1. Root app: zod validation failures become RFC 9457 problem JSON.
   const app = new OpenAPIHono<AppEnv>({
     defaultHook: (result, c) => {
@@ -121,6 +128,11 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
   // 3b. Maintenance lock (phase 9): while a restore runs, everything below (auth, API, SPA)
   // answers 503 problem JSON. /api/health stays reachable — its route is registered above.
   app.use('*', maintenanceGuard)
+
+  // 3c. Demo write guard — a no-op unless OPENTASK_DEMO_MODE is set. Registered above the
+  // better-auth handler so one middleware covers both /api/auth account mutations and the
+  // abusable /api/v1 surfaces (see demo-guard.ts for the per-surface rationale).
+  app.use('*', demoGuard(deps.config))
 
   // 4. better-auth endpoints.
   app.on(['GET', 'POST'], '/api/auth/*', (c) => deps.auth.handler(c.req.raw))
@@ -175,6 +187,18 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
             available: updateState.updateAvailable,
             latestVersion: updateState.latestVersion,
             url: updateState.url,
+          }
+        : null,
+      // Public sandbox facts (null on every normal instance). The credentials are published
+      // deliberately: the demo is meant to be walked into, and the login page prefills from
+      // here so nobody has to copy-paste them off the marketing site.
+      demo_mode: deps.config.demoMode
+        ? {
+            enabled: true,
+            resets_at: new Date(bootedAt + deps.config.demoResetSeconds * 1000).toISOString(),
+            reset_seconds: deps.config.demoResetSeconds,
+            email: DEMO_EMAIL,
+            password: DEMO_PASSWORD,
           }
         : null,
     })

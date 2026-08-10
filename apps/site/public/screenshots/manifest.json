@@ -1,0 +1,74 @@
+{
+  "hero": {
+    "width": 1440,
+    "height": 900
+  },
+  "upcoming": {
+    "width": 1440,
+    "height": 900
+  },
+  "project": {
+    "width": 1440,
+    "height": 900
+  },
+  "board": {
+    "width": 1440,
+    "height": 900
+  },
+  "filter": {
+    "width": 1440,
+    "height": 900
+  },
+  "reporting": {
+    "width": 1440,
+    "height": 900
+  },
+  "quick-add": {
+    "width": 1440,
+    "height": 900
+  },
+  "palette": {
+    "width": 1440,
+    "height": 900
+  },
+  "hero-dark": {
+    "width": 1440,
+    "height": 900
+  },
+  "upcoming-dark": {
+    "width": 1440,
+    "height": 900
+  },
+  "project-dark": {
+    "width": 1440,
+    "height": 900
+  },
+  "board-dark": {
+    "width": 1440,
+    "height": 900
+  },
+  "filter-dark": {
+    "width": 1440,
+    "height": 900
+  },
+  "reporting-dark": {
+    "width": 1440,
+    "height": 900
+  },
+  "quick-add-dark": {
+    "width": 1440,
+    "height": 900
+  },
+  "palette-dark": {
+    "width": 1440,
+    "height": 900
+  },
+  "mobile": {
+    "width": 390,
+    "height": 844
+  },
+  "mobile-dark": {
+    "width": 390,
+    "height": 844
+  }
+}

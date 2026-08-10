@@ -11,13 +11,14 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "build": "pnpm -r build",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm openapi --check && pnpm build",
     "changeset": "changeset",
     "icons": "node scripts/generate-icons.mjs",
     "seed": "pnpm --filter @opentask/server seed",
     "screenshots": "node scripts/capture-screenshots.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
-    "smoke:docker": "bash scripts/smoke-docker.sh"
+    "smoke:docker": "bash scripts/smoke-docker.sh",
+    "openapi": "pnpm --filter @opentask/server exec tsx ../../scripts/generate-openapi.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",

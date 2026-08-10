@@ -13,9 +13,10 @@
 import { Navigate, useNavigate, useParams } from '@tanstack/react-router'
 import { ChevronLeft, Loader2 } from 'lucide-react'
 import { Suspense, useState } from 'react'
+import { useDemo } from '@/api/hooks/info'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { SETTINGS_PAGES } from './registry'
+import { SETTINGS_PAGES, visibleSettingsPages } from './registry'
 import { SettingsSearch } from './SettingsSearch'
 import { useUserSettings } from './useSettings'
 
@@ -31,14 +32,20 @@ export default function SettingsLayout() {
   const params = useParams({ strict: false })
   const navigate = useNavigate()
   const { settings } = useUserSettings()
+  const demo = useDemo()
   // Below `md`, false = the nav list is the visible screen, true = the page pane is.
   const [mobilePane, setMobilePane] = useState(false)
 
-  const active = SETTINGS_PAGES.find((page) => page.key === params.page)
+  // On a demo instance the blocked pages are dropped entirely, so a hand-typed
+  // /settings/backups falls through to the same canonicalisation as a bogus key.
+  const pages = visibleSettingsPages(SETTINGS_PAGES, demo !== null)
+  const active = pages.find((page) => page.key === params.page)
 
-  // Unknown / missing `:page` → canonicalise to Account (all hooks already ran above).
+  // Unknown / missing / demo-hidden `:page` → canonicalise to the first available page
+  // (Account normally; General on a demo, where Account is hidden).
   if (!active) {
-    return <Navigate to="/settings/$page" params={{ page: 'account' }} replace />
+    const fallback = pages[0]?.key ?? 'general'
+    return <Navigate to="/settings/$page" params={{ page: fallback }} replace />
   }
 
   const goToPage = (key: string) => {
@@ -93,7 +100,7 @@ export default function SettingsLayout() {
           <div className="flex h-[52px] shrink-0 items-center border-border border-b px-4">
             <h2 className="font-medium text-header text-text-primary">Settings</h2>
           </div>
-          <SettingsSearch pages={SETTINGS_PAGES} activeKey={active.key} onPick={goToPage} />
+          <SettingsSearch pages={pages} activeKey={active.key} onPick={goToPage} />
         </div>
 
         {/* Right pane — the active page under Suspense; hidden while the nav is showing on mobile. */}

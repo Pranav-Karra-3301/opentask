@@ -12,6 +12,10 @@ export const ConfigSchema = z.object({
   webDistDir: z.string().nullable(),
   allowRegistration: z.boolean(),
   disableUpdateCheck: z.boolean(),
+  /** Public-sandbox mode: blocks abusable writes, hides account/integration surfaces. */
+  demoMode: z.boolean(),
+  /** Seconds between demo wipes — surfaced on /info so the UI can count down. */
+  demoResetSeconds: z.number().int().min(60),
   logLevel: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']),
   trustProxy: z.boolean(),
   uploadMaxMb: z.number().int().min(1),
@@ -81,13 +85,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
           apiKey: g(`${p}_API_KEY`) ?? null,
         }
       : null
+  const demoMode = bool(g('DEMO_MODE'), false)
   return ConfigSchema.parse({
     publicUrl: g('PUBLIC_URL') ?? null,
     port: Number(g('PORT') ?? 7968),
     dataDir: g('DATA_DIR') ?? '/data',
     webDistDir: g('WEB_DIST') ?? null,
     allowRegistration: bool(g('ALLOW_REGISTRATION'), false),
-    disableUpdateCheck: bool(g('DISABLE_UPDATE_CHECK'), false),
+    // A demo wipes itself on a timer, so an update banner is noise it can never act on.
+    disableUpdateCheck: demoMode || bool(g('DISABLE_UPDATE_CHECK'), false),
+    demoMode,
+    demoResetSeconds: Number(g('DEMO_RESET_SECONDS') ?? 1800),
     logLevel: g('LOG_LEVEL') ?? 'info',
     trustProxy: bool(g('TRUST_PROXY'), false),
     uploadMaxMb: Number(g('UPLOAD_MAX_MB') ?? 25),

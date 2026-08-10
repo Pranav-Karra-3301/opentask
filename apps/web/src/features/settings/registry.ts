@@ -29,6 +29,17 @@ export interface SettingsPageDef {
   icon: LucideIcon
   keywords: string[]
   Component: LazyExoticComponent<ComponentType>
+  /**
+   * Hidden on a demo instance because the server refuses these writes anyway
+   * (apps/server/src/demo.ts) — showing a page whose every control 403s is worse than
+   * not showing it. Keep this list in step with the server's blocked surfaces.
+   */
+  demoBlocked?: true
+}
+
+/** The registry minus what a demo instance can't do. Identity when `demo` is false. */
+export function visibleSettingsPages(pages: SettingsPageDef[], demo: boolean): SettingsPageDef[] {
+  return demo ? pages.filter((page) => page.demoBlocked !== true) : pages
 }
 export const SETTINGS_PAGES: SettingsPageDef[] = [
   {
@@ -48,6 +59,7 @@ export const SETTINGS_PAGES: SettingsPageDef[] = [
       'danger',
     ],
     Component: lazy(() => import('./pages/AccountPage')),
+    demoBlocked: true,
   },
   {
     key: 'general',
@@ -107,6 +119,7 @@ export const SETTINGS_PAGES: SettingsPageDef[] = [
     icon: Bell,
     keywords: ['push', 'ntfy', 'gotify', 'webhook', 'channels'],
     Component: lazy(() => import('./pages/NotificationsPage')),
+    demoBlocked: true,
   },
   {
     key: 'backups',
@@ -114,6 +127,7 @@ export const SETTINGS_PAGES: SettingsPageDef[] = [
     icon: Archive,
     keywords: ['backup', 'restore', 'download', 'retention'],
     Component: lazy(() => import('./pages/BackupsPage')),
+    demoBlocked: true,
   },
   {
     key: 'import',
@@ -122,6 +136,7 @@ export const SETTINGS_PAGES: SettingsPageDef[] = [
     // NB: no 'token' keyword — SettingsSearch.test.ts pins 'token' → only Integrations.
     keywords: ['import', 'todoist', 'migrate', 'csv', 'backup file', 'transfer'],
     Component: lazy(() => import('./pages/ImportPage')),
+    demoBlocked: true,
   },
   {
     key: 'integrations',
@@ -149,6 +164,7 @@ export const SETTINGS_PAGES: SettingsPageDef[] = [
       'openai',
     ],
     Component: lazy(() => import('./pages/IntegrationsPage')),
+    demoBlocked: true,
   },
   {
     key: 'about',

@@ -16,3 +16,4 @@ apps/web/e2e/.auth/
 apps/web/.auth/
 apps/web/test-results/
 apps/web/playwright-report/
+.vercel
